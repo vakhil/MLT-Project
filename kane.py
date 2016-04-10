@@ -5,6 +5,9 @@ import os
 import ruamel.yaml as yaml
 from numpy import array
 from skimage.feature import hog 
+from sklearn.svm import LinearSVC
+import pickle
+from sklearn.externals import joblib
 
 content_list = []
 frames  = {}
@@ -75,7 +78,10 @@ def training(path,train,labels):
 	L2HysThreshold = 2.0000000000000001e-01
 	gammaCorrection = 0
 	nlevels = 64
-
+	winStride = (8,8)
+	padding = (8,8)
+	locations = ((10,20),)
+	hog = cv2.HOGDescriptor(winSize,blockSize,blockStride,cellSize,nbins,derivAperture,winSigma, histogramNormType,L2HysThreshold,gammaCorrection,nlevels)
 
 
 	for root, dir_names, file_names in os.walk(path):
@@ -103,38 +109,73 @@ def training(path,train,labels):
 
 					#print file_path
 					image = cv2.imread(file_path,0)
-					tame = tame + 1
-					winStride = (8,8)
-					padding = (8,8)
-					locations = ((10,20),)				
-					#hog = cv2.HOGDescriptor(winSize,blockSize,blockStride,cellSize,nbins,derivAperture,winSigma, histogramNormType,L2HysThreshold,gammaCorrection,nlevels)
-					#hist = hog.compute(image,winStride,padding,locations)
-					fd =hog(image, orientations=9, pixels_per_cell=(14, 14), cells_per_block=(1, 1), visualise=False)
-					train.append(fd)
-					#print (fd)
-					# if file_name[0:3] == 'spm':
-					# 	data = open(file_path, 'r').read().replace('\n', '');
-					# 	list1.append(data)
-					# 	list2.append(0)
-					# 	names[file_path] = 1
+					
+					
+					lists = []
+					
+					hist = hog.compute(image,winStride,padding,locations)
+					
+					for i in range(0, len(hist)) :
+						
+						lists.append( hist[i][0])
 
-					# else:
-					# 	data = open(file_path, 'r').read().replace('\n', '');
-					# 	list1.append(data)
-					# 	list2.append(1)
-					# 	names[file_path] = 1
+					train.append(lists)
+					tame = tame + 1
+					
+					#fd =hog(c, orientations=9, pixels_per_cell=(len(image)/size, (len(image[0]))/size), cells_per_block=(1, 1), visualise=False)
+					#for i in len(image) :
+
+					#train.append(fd)
+					#print (fd)
+					
 		return tame
 
 
 
-hell = training('./finale/input_1',train,labels)
-image = cv2.imread('./finale/input_1/Number-plate/input1_Number-plate1.jpg',0)
-fd = hog(image, orientations=9, pixels_per_cell=(14, 14), cells_per_block=(1, 1), visualise=False)
+hell = training('./finale/input_1/',train,labels)
+image = cv2.imread('gendu.jpg',0)
+clf = LinearSVC()
+print len(train)
+print len(labels)
+
+train = array(train)
+tame = 0
+winSize = (64,64)
+blockSize = (16,16)
+blockStride = (8,8)
+cellSize = (8,8)
+nbins = 9
+derivAperture = 1
+winSigma = 4.
+histogramNormType = 0
+L2HysThreshold = 2.0000000000000001e-01
+gammaCorrection = 0
+nlevels = 64
+winStride = (8,8)
+padding = (8,8)
+locations = ((10,20),)
+hog = cv2.HOGDescriptor(winSize,blockSize,blockStride,cellSize,nbins,derivAperture,winSigma, histogramNormType,L2HysThreshold,gammaCorrection,nlevels)
+hist = hog.compute(image,winStride,padding,locations)
+
+
+
+lists = []					
+					
+for i in range(0, len(hist)) :
+	
+	lists.append( hist[i][0])
+finale = []
+finale.append(lists)
+clf.fit(train,labels)
+# filename = '/digits_classifier.joblib.pkl'
+# _ = joblib.dump(clf, filename, compress=9)
+with open('kane.pkl', 'wb') as f:
+    pickle.dump(clf, f)
+print clf.predict(finale), "HAKe"
 #h = hog.compute(image)
 #print fd.shape
 # print image.shape
-print len(train)
-print (labels)
+
 
 #image = cv2.imread("test.jpg",0)
 #hog = cv2.HOGDescriptor(winSize,blockSize,blockStride,cellSize,nbins,derivAperture,winSigma, histogramNormType,L2HysThreshold,gammaCorrection,nlevels)
