@@ -52,26 +52,41 @@ kernel = cv2.getStructuringElement(cv2.MORPH_CROSS,(5,5),(3,3))
 fgbg = cv2.BackgroundSubtractorMOG2(history=500,varThreshold=19, bShadowDetection= False)
 k=0
 label=0
-ff = None 
+firstFrame = None 
 while(1):
 	ret, frame = cap.read()
-
-	height, width = frame.shape[:2]
 	frame = cv2.resize(frame,(900, 700), interpolation = cv2.INTER_CUBIC)
-	fgmask = fgbg.apply(frame)
+	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+	gray = cv2.GaussianBlur(gray, (21, 21), 0)
+	if firstFrame is None:
+		firstFrame = gray
+		continue
+	bgs= cv2.absdiff(firstFrame, gray)
+	# height, width = frame.shape[:2]
+	
+	#frames = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+	#fgmask = fgbg.apply(frame)
 	#fgmask = fgbg.apply(frame,learningRate=0.5)
 	#fg1 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
-	fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
+	#fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
 	
-	fgamsk= cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
-	fgmask = cv2.GaussianBlur(fgmask, (21, 21), 0)
-	#fgmask = cv2.dilate(fgmask,kernel,iterations = 1)
-	if ff == None :
-		ff = frame
-	cnts,u = cv2.findContours(fgmask.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+	#fgamsk= cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
+	#frames = cv2.GaussianBlur(frames, (21, 21), 0)
+	#gray = cv2.dilate(fgmask,kernel,iterations = 1)
+	
+
+
+
+	thresh = cv2.threshold(bgs, 25, 255, cv2.THRESH_BINARY)[1]
+	thresh = cv2.dilate(thresh, None, iterations=2)
+	(cnts, _) = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,	cv2.CHAIN_APPROX_SIMPLE)
 	
 	
-	mg2_fg = cv2.bitwise_and(frame,frame,mask = fgmask)
+
+	#cnts,u = cv2.findContours(bgs.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+	
+	
+	#mg2_fg = cv2.bitwise_and(frames,frames,mask = frames)
 	for c in cnts:
 		# if the contour is too small, ignore it
 		if cv2.contourArea(c) < 8000:
@@ -80,12 +95,12 @@ while(1):
 		(x, y, w, h) = cv2.boundingRect(c)
 		cv2.rectangle(frame, (x, y), (x + w, y + h), (0,0,255), 2)
 
-		img = cv2.cvtColor(mg2_fg, cv2.COLOR_BGR2GRAY)
+		
 	
-		im=img[y:y+h,x:x+w]
+		im=gray[y:y+h,x:x+w]
 	  
 		
-		
+		print im.shape
 		col,row=im.shape
 		Y=np.zeros((col,row),dtype=np.uint8)
 		for a in range(0,col):
